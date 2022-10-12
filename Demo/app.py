@@ -7,13 +7,8 @@ import pandas as pd
 import numpy as np
 from streamlit_lottie import st_lottie
 import requests
-from PIL import Image
 from scipy.ndimage.interpolation import zoom
-
-
-
 from tensorflow.keras.datasets import mnist
-
 from streamlit_drawable_canvas import st_canvas
 
 def load_lottieurl(url: str):
