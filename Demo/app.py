@@ -95,7 +95,7 @@ def model_fit(model):
   return history
 
 
-train = st.checkbox('train')
+train = st.sidebar.checkbox('train')
 
 #test_loss, test_acc = model.evaluate(test_images, test_labels)
 #st.write(f"precision (accuracy) sobre el conjunto test: {test_acc}")
