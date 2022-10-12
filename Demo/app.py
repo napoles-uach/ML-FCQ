@@ -8,7 +8,6 @@ import numpy as np
 from streamlit_lottie import st_lottie
 import requests
 from PIL import Image
-import cv2
 from scipy.ndimage.interpolation import zoom
 
 
