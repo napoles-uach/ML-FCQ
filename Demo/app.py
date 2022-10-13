@@ -107,7 +107,7 @@ def model_fit(model):
 #    history = model_fit(model)
 #    df = pd.DataFrame(history.history)
 #    st.line_chart(df)
-st.stop()
+#st.stop()
 os.system('ls')
 model = keras.models.load_model('mi_modelo.h5')
 st.markdown('''
