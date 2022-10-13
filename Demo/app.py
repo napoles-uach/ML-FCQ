@@ -62,17 +62,17 @@ code = '''model = keras.Sequential([
 st.code(code, language='python')
 n_neuronas=st.number_input('Opcional, da un valor para el numero de neuronas, default 512',min_value=10, max_value=1000, value=512)
 
-model = keras.Sequential([
- layers.Dense(n_neuronas, activation="relu"),
- layers.Dense(10, activation="softmax")
-])
+#model = keras.Sequential([
+# layers.Dense(n_neuronas, activation="relu"),
+# layers.Dense(10, activation="softmax")
+#])
 
 
 
 st.subheader('Optimización usando backpropagation 🔙')
-model.compile(optimizer="rmsprop",
- loss="sparse_categorical_crossentropy",
- metrics=["accuracy"])
+#model.compile(optimizer="rmsprop",
+# loss="sparse_categorical_crossentropy",
+# metrics=["accuracy"])
 code_comp = '''model.compile(optimizer="rmsprop",
  loss="sparse_categorical_crossentropy",
  metrics=["accuracy"])
@@ -95,17 +95,17 @@ def model_fit(model):
   return history
 
 
-train = st.sidebar.checkbox('train')
+#train = st.sidebar.checkbox('train')
 
 #test_loss, test_acc = model.evaluate(test_images, test_labels)
 #st.write(f"precision (accuracy) sobre el conjunto test: {test_acc}")
 
-if train:
-  with st.expander('plot'):
-    history = model_fit(model)
-    df = pd.DataFrame(history.history)
-    st.line_chart(df)
-
+#if train:
+#  with st.expander('plot'):
+#    history = model_fit(model)
+#    df = pd.DataFrame(history.history)
+#    st.line_chart(df)
+model = keras.models.load_model('https://github.com/napoles-uach/ML-FCQ/blob/main/Demo/mi_modelo.h5?raw=true')
 
 st.markdown('''
 #### Ahora que la red neuronal ha sido entrenada podemos ponerla a prueba entregandole algunas imagenes de numeros para ver que haga la prediccion correcta
