@@ -107,7 +107,7 @@ def model_fit(model):
 #    history = model_fit(model)
 #    df = pd.DataFrame(history.history)
 #    st.line_chart(df)
-model = keras.models.load_model('https://github.com/napoles-uach/ML-FCQ/blob/main/Demo/mi_modelo.h5')
+model = keras.models.load_model('https://github.com/napoles-uach/ML-FCQ/raw/main/Demo/mi_modelo.h5')
 st.markdown('''
 #### Ahora que la red neuronal ha sido entrenada podemos ponerla a prueba entregandole algunas imagenes de numeros para ver que haga la prediccion correcta
 ''')
