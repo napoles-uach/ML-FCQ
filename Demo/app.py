@@ -153,4 +153,4 @@ with st.expander('dibuja'):
     pred_ima=model.predict(ima)
     with col1d:
       st_lottie(load_lottieurl(links['net']),key="2")
-    col1d.subheader('Yo digo que es un '+str(pred_ima.argmax())+' ✨')
+    col1d.subheader('🤔 Parece un '+str(pred_ima.argmax())+' ✨')
