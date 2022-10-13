@@ -11,7 +11,7 @@ from scipy.ndimage.interpolation import zoom
 from tensorflow.keras.datasets import mnist
 from streamlit_drawable_canvas import st_canvas
 import os
-os.system("wget https://github.com/napoles-uach/ML-FCQ/raw/main/Demo/mi_modelo.h5")
+#os.system("wget https://github.com/napoles-uach/ML-FCQ/raw/main/Demo/mi_modelo.h5")
 
 def load_lottieurl(url: str):
     r = requests.get(url)
