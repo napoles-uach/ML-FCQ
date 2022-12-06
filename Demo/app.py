@@ -39,19 +39,17 @@ with col1:
 with col2:
   st.image('https://miro.medium.com/max/1160/1*T-AyPeCdLDzHI0R952EmYg.gif')
 
-#def convim(im,nmax=28):
-#  lista1=[]
-#  for i in range(nmax):
-#    lista2=[]
-#    for j in range(nmax):
-#      bit=np.sum(im[i][j][:])
-#      lista2.append(bit)
-#    lista1.append(lista2)
-#  return lista1
-
 def convim(im,nmax=28):
-  nmax = im.shape[0]
-  return np.sum(im, axis=(1, 2))
+  lista1=[]
+  for i in range(nmax):
+    lista2=[]
+    for j in range(nmax):
+      bit=np.sum(im[i][j][:])
+      lista2.append(bit)
+    lista1.append(lista2)
+  return lista1
+
+
 
 
 
