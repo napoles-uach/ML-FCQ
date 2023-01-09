@@ -23,7 +23,7 @@ st.write('Draw a digit:')
 canvas_result = st_canvas(stroke_width=10, height=28*5, width=28*5)
   
 # Process drawn image and make prediction using model
-if canvas_result.image_data is not None:
+if canvas_result.image_data is not None and np.any(canvas_result.image_data):
     st.write(canvas_result.image_data)
     # Convert drawn image to grayscale and resize to 28x28
     processed_image = process_image(canvas_result.image_data)
