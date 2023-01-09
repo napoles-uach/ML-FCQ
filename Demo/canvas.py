@@ -5,7 +5,7 @@ from scipy.ndimage.interpolation import zoom
 from streamlit_drawable_canvas import st_canvas
 
 # Load trained model
-model = ...
+model = keras.models.load_model('Demo/mi_modelo.h5')
 
 def convim(im,nmax=28):
   lista1=[]
