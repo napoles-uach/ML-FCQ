@@ -18,7 +18,7 @@ def process_image(image_data, size=28):
   # Return image as a single row
   return normalized_image.reshape(1, -1)
 
-st.write('Draw a digit:'):
+st.write('Draw a digit:')
 # Display canvas for drawing
 canvas_result = st_canvas(stroke_width=10, height=28*5, width=28*5)
   
