@@ -18,12 +18,12 @@ def process_image(image_data, size=28):
   # Return image as a single row
   return normalized_image.reshape(1, -1)
 
-with st.expander('Draw a digit:'):
-  # Display canvas for drawing
-  canvas_result = st_canvas(stroke_width=10, height=28*5, width=28*5)
+st.write('Draw a digit:'):
+# Display canvas for drawing
+canvas_result = st_canvas(stroke_width=10, height=28*5, width=28*5)
   
-  # Process drawn image and make prediction using model
-  if canvas_result.image_data is not None:
+# Process drawn image and make prediction using model
+if canvas_result.image_data is not None:
     # Convert drawn image to grayscale and resize to 28x28
     processed_image = process_image(canvas_result.image_data)
     # Make prediction using model
@@ -31,7 +31,7 @@ with st.expander('Draw a digit:'):
     # Display prediction
     st.header('Prediction:')
     st.write('This image appears to be a ' + str(prediction) + '.')
-  else:
+else:
     # Display message if canvas is empty
     st.header('Prediction:')
     st.write('No image drawn, please draw a digit to get a prediction.')
