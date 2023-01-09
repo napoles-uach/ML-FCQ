@@ -32,7 +32,7 @@ if np.any(canvas_result.image_data):
     # Display prediction
     st.header('Prediction:')
     st.write('This image appears to be a ' + str(prediction) + '.')
-    st.markdown('This image appears to be a :red[colored red]' + str(prediction) + '.')
+    st.markdown('This image appears to be a :red[' + str(prediction) + ']')
 else:
     # Display message if canvas is empty
     st.header('Prediction:')
