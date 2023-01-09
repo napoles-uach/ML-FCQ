@@ -31,8 +31,8 @@ if np.any(canvas_result.image_data):
     prediction = model.predict(processed_image).argmax()
     # Display prediction
     st.header('Prediction:')
-    st.markdown('# This image appears to be a :blue[' + str(prediction) + ']')
+    st.markdown('# This number appears to be a :blue[' + str(prediction) + ']')
 else:
     # Display message if canvas is empty
     st.header('Prediction:')
-    st.write('No image drawn, please draw a digit to get a prediction.')
+    st.write('No number drawn, please draw a digit to get a prediction.')
