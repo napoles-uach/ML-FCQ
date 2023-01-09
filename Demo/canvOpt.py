@@ -31,3 +31,7 @@ with st.expander('Draw a digit:'):
     # Display prediction
     st.header('Prediction:')
     st.write('This image appears to be a ' + str(prediction) + '.')
+  else:
+  # Display message if canvas is empty
+  st.header('Prediction:')
+  st.write('No image drawn, please draw a digit to get a prediction.')
