@@ -24,6 +24,7 @@ canvas_result = st_canvas(stroke_width=10, height=28*5, width=28*5)
   
 # Process drawn image and make prediction using model
 if canvas_result.image_data is not None:
+    st.write(canvas_result.image_data)
     # Convert drawn image to grayscale and resize to 28x28
     processed_image = process_image(canvas_result.image_data)
     # Make prediction using model
