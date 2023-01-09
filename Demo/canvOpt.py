@@ -3,7 +3,7 @@ import tensorflow as tf
 import numpy as np
 from scipy.ndimage.interpolation import zoom
 from streamlit_drawable_canvas import st_canvas
-st.markdown("# :red[Draw] and :blue[Predict:] :blue[Digit]:purple[Recognition]:pink[App] :pencil: 💻🤖🧑")
+st.markdown("# :green[Draw] and :blue[Predict:] Digit Recognition App :pencil: 💻🤖🧑")
 
 # Load trained model
 model = tf.keras.models.load_model('Demo/mi_modelo.h5')
@@ -32,7 +32,7 @@ if np.any(canvas_result.image_data):
     prediction = model.predict(processed_image).argmax()
     # Display prediction
     st.header('Prediction:')
-    st.markdown('This number appears to be a \n # :blue[' + str(prediction) + ']')
+    st.markdown('This number appears to be a \n # :red[' + str(prediction) + ']')
 else:
     # Display message if canvas is empty
     st.header('Prediction:')
