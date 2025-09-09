@@ -1,39 +1,81 @@
 import streamlit as st
 import tensorflow as tf
 import numpy as np
-from scipy.ndimage.interpolation import zoom
+from scipy.ndimage import zoom
 from streamlit_drawable_canvas import st_canvas
+from pathlib import Path
+
+st.set_page_config(page_title="Digit Recognition App", page_icon="✏️")
 st.markdown("# Digit :blue[Recognition] :green[App] ✏️🤖🔢")
 
-# Load trained model
-model = tf.keras.models.load_model('Demo/mi_modelo.h5')
+# --------- CARGA DEL MODELO (.h5) ---------
+@st.cache_resource
+def load_model(path: str):
+    return tf.keras.models.load_model(path, compile=False)
 
-def process_image(image_data, size=28):
-  """Convert drawn image to grayscale and resize to 28x28."""
-  # Convert image to grayscale
-  grayscale_image = np.sum(image_data, axis=2)
-  # Resize image
-  resized_image = zoom(grayscale_image, size / grayscale_image.shape[0])
-  # Normalize pixel values
-  normalized_image = resized_image.astype(np.float32) / 255
-  # Return image as a single row
-  return normalized_image.reshape(1, -1)
+MODEL_PATH = Path("Demo/mi_modelo.h5")
+if not MODEL_PATH.exists():
+    st.error(f"No se encontró el modelo en {MODEL_PATH.resolve()}")
+    st.stop()
 
-st.write('Draw a digit:')
-# Display canvas for drawing
-canvas_result = st_canvas(stroke_width=10, height=28*5, width=28*5)
-  
-# Process drawn image and make prediction using model
-if np.any(canvas_result.image_data):
-    #st.write(canvas_result.image_data)
-    # Convert drawn image to grayscale and resize to 28x28
-    processed_image = process_image(canvas_result.image_data)
-    # Make prediction using model
-    prediction = model.predict(processed_image).argmax()
-    # Display prediction
-    st.header('Prediction:')
-    st.markdown('This number seems to be a \n # :red[' + str(prediction) + ']')
+model = load_model(str(MODEL_PATH))
+
+# --------- PREPROCESADO DE IMAGEN ---------
+def process_image_rgba(x_rgba: np.ndarray, size=28) -> np.ndarray:
+    """
+    Convierte la imagen RGBA del canvas en la forma esperada por el modelo.
+    - Pasa a escala de grises
+    - Redimensiona a (28,28)
+    - Normaliza a [0,1]
+    - Invierte (1-x) para fondo negro y dígito blanco
+    - Ajusta shape según input_shape
+    """
+    rgb = x_rgba[..., :3]          # tomar solo RGB
+    gray = rgb.mean(axis=2)        # gris
+    gray = gray.astype(np.float32) / 255.0
+
+    # Resize con zoom
+    h, w = gray.shape
+    zoom_y, zoom_x = size / h, size / w
+    gray_resized = zoom(gray, (zoom_y, zoom_x), order=1)
+
+    # Invertir (fondo negro, dígito blanco típico de MNIST)
+    gray_resized = 1.0 - gray_resized
+
+    # Adaptar al input del modelo
+    if len(model.input_shape) == 4:     # (None, 28, 28, 1)
+        x = gray_resized[None, ..., None]
+    else:                               # (None, 784)
+        x = gray_resized.reshape(1, -1)
+
+    return x
+
+# --------- UI ---------
+st.write("✍️ Draw a digit below:")
+
+canvas_result = st_canvas(
+    stroke_width=10,
+    height=28 * 5,
+    width=28 * 5,
+    background_color="white",
+    stroke_color="black",
+    drawing_mode="freedraw",
+    key="canvas",
+)
+
+st.header("Prediction:")
+
+if canvas_result is not None and canvas_result.image_data is not None:
+    img = canvas_result.image_data
+    if np.sum(img) > 0:  # hay algo dibujado
+        try:
+            x = process_image_rgba(img, size=28)
+            probs = model.predict(x)
+            pred = int(np.argmax(probs, axis=1)[0])
+            st.markdown(f"Este número parece ser:\n\n# :red[{pred}]")
+        except Exception as e:
+            st.error(f"⚠️ Error procesando o prediciendo: {e}")
+    else:
+        st.write("No number drawn, please draw a digit.")
 else:
-    # Display message if canvas is empty
-    st.header('Prediction:')
-    st.write('No number drawn, please draw a digit to get a prediction.')
+    st.write("No number drawn, please draw a digit.")
