@@ -3,7 +3,7 @@ import tensorflow as tf
 import numpy as np
 from scipy.ndimage.interpolation import zoom
 from streamlit_drawable_canvas import st_canvas
-st.markdown("# Digit :blue[Recognition] :green[App] :pencil: 💻🤖")
+st.markdown("# Digit :blue[Recognition] :green[App] ✏️🤖🔢")
 
 # Load trained model
 model = tf.keras.models.load_model('Demo/mi_modelo.h5')
