@@ -1,10 +1,19 @@
-streamlit
-streamlit_lottie
-streamlit_drawable_canvas
-numpy
-matplotlib
-tensorflow
-pandas
-scipy
+# requirements.txt para Digit Recognition App
+
+# --- Core ---
+#python_version == "3.9"   # o 3.10, ambas estables con TF 2.13/2.14
+streamlit==1.36.0
+streamlit-drawable-canvas==0.9.3
+
+# --- Machine Learning ---
+tensorflow==2.13.0
+keras==2.13.1
+h5py==3.8.0
+numpy==1.24.3
+scipy==1.10.1
+
+# --- Utilidades ---
+protobuf<4  # evita problemas con TF/keras 2.13
+
 
 
