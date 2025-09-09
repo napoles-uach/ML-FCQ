@@ -72,7 +72,7 @@ if canvas_result is not None and canvas_result.image_data is not None:
             x = process_image_rgba(img, size=28)
             probs = model.predict(x)
             pred = int(np.argmax(probs, axis=1)[0])
-            st.markdown(f"Este número parece ser:\n\n# :red[{pred}]")
+            st.markdown(f"This number seems to be:\n\n# :red[{pred}]")
         except Exception as e:
             st.error(f"⚠️ Error procesando o prediciendo: {e}")
     else:
