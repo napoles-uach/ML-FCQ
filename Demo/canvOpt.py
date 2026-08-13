@@ -191,29 +191,36 @@ def as_probabilities(output: np.ndarray) -> np.ndarray:
 # Interfaz
 # -----------------------------------------------------------------------------
 
-if "canvas_version" not in st.session_state:
-    st.session_state.canvas_version = 0
+if "clear_canvas_requested" not in st.session_state:
+    st.session_state.clear_canvas_requested = False
 
 
 def clear_canvas():
-    """Cambia la identidad del canvas antes del siguiente renderizado."""
-    st.session_state.canvas_version += 1
+    """Solicita cargar un dibujo vacío sin desmontar el componente."""
+    st.session_state.clear_canvas_requested = True
 
 
-# Mantener una altura fija evita que la página se contraiga mientras el
-# componente se reinicia al limpiar.
-with st.container(height=300, border=False):
-    canvas_result = st_canvas(
-        stroke_width=12,
-        stroke_color="#000000",
-        background_color="#FFFFFF",
-        height=280,
-        width=280,
-        drawing_mode="freedraw",
-        display_toolbar=False,
-        update_streamlit=True,
-        key=f"digit_canvas_{st.session_state.canvas_version}",
-    )
+# initial_drawing actúa como un pulso: solamente se envía el dibujo vacío en
+# la ejecución causada por el botón. La key permanece constante, de modo que
+# el componente no se desmonta ni cambia de tamaño.
+if st.session_state.clear_canvas_requested:
+    initial_drawing = {"version": "4.4.0", "objects": []}
+    st.session_state.clear_canvas_requested = False
+else:
+    initial_drawing = None
+
+canvas_result = st_canvas(
+    stroke_width=12,
+    stroke_color="#000000",
+    background_color="#FFFFFF",
+    height=280,
+    width=280,
+    drawing_mode="freedraw",
+    initial_drawing=initial_drawing,
+    display_toolbar=False,
+    update_streamlit=True,
+    key="digit_canvas",
+)
 
 st.button(
     "Limpiar",
