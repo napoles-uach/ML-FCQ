@@ -12,7 +12,7 @@ from streamlit_drawable_canvas import st_canvas
 st.set_page_config(
     page_title="Reconocimiento de dígitos",
     page_icon="✏️",
-    layout="centered",
+    layout="wide",
 )
 
 st.title("Reconocimiento de dígitos ✏️🤖")
@@ -376,24 +376,28 @@ if st.session_state.clear_canvas_requested:
 else:
     initial_drawing = None
 
-canvas_result = st_canvas(
-    stroke_width=12,
-    stroke_color="#000000",
-    background_color="#FFFFFF",
-    height=280,
-    width=280,
-    drawing_mode="freedraw",
-    initial_drawing=initial_drawing,
-    display_toolbar=False,
-    update_streamlit=True,
-    key="digit_canvas",
-)
+draw_column, map_column = st.columns([0.85, 1.65], gap="large")
 
-st.button(
-    "Limpiar",
-    use_container_width=True,
-    on_click=clear_canvas,
-)
+with draw_column:
+    st.subheader("Dibujo")
+    canvas_result = st_canvas(
+        stroke_width=12,
+        stroke_color="#000000",
+        background_color="#FFFFFF",
+        height=280,
+        width=280,
+        drawing_mode="freedraw",
+        initial_drawing=initial_drawing,
+        display_toolbar=False,
+        update_streamlit=True,
+        key="digit_canvas",
+    )
+
+    st.button(
+        "Limpiar",
+        use_container_width=True,
+        on_click=clear_canvas,
+    )
 
 if canvas_result.image_data is not None:
     try:
@@ -414,103 +418,116 @@ if canvas_result.image_data is not None:
             confidence = float(probabilities[prediction])
             top_three = np.argsort(probabilities)[::-1][:3]
 
-            result_left, result_right = st.columns([1, 1.4])
+            with draw_column:
+                result_left, result_right = st.columns([0.8, 1.2])
 
-            with result_left:
-                st.subheader("Predicción")
-                st.markdown(
-                    f"<div style='font-size:6rem; line-height:1; "
-                    f"font-weight:700; text-align:center; color:#e63946;'>"
-                    f"{prediction}</div>",
-                    unsafe_allow_html=True,
-                )
-                st.markdown(
-                    f"<p style='text-align:center'>Confianza: "
-                    f"<strong>{confidence:.1%}</strong></p>",
-                    unsafe_allow_html=True,
-                )
-
-            with result_right:
-                st.subheader("Tres opciones principales")
-                for digit in top_three:
-                    probability = float(probabilities[digit])
-                    st.write(f"**{digit}** — {probability:.1%}")
-                    st.progress(probability)
-
-            with st.expander("Ver la imagen que recibe el modelo"):
-                st.image(
-                    normalized,
-                    caption="Imagen normalizada a 28 × 28",
-                    clamp=True,
-                    width=224,
-                )
-
-            if confidence < 0.60:
-                st.info(
-                    "La confianza es baja. Prueba dibujando el dígito más grande "
-                    "y con un solo trazo continuo."
-                )
-
-            st.divider()
-            st.subheader("Espacio latente")
-            st.caption(
-                "Cada punto representa una imagen de MNIST. El diamante negro "
-                "indica dónde ubica la red el dígito que acabas de dibujar."
-            )
-
-            try:
-                latent_reference = build_latent_reference(
-                    model,
-                    str(MODEL_PATH),
-                    MODEL_PATH.stat().st_mtime_ns,
-                )
-                latent_vector = latent_reference["extractor"].predict(
-                    model_input,
-                    verbose=0,
-                )
-                latent_vector = np.asarray(latent_vector, dtype=np.float32).reshape(
-                    1, -1
-                )
-                latent_point = (
-                    latent_vector - latent_reference["mean"]
-                ) @ latent_reference["components"].T
-
-                render_latent_map(
-                    latent_reference,
-                    latent_point[0],
-                    prediction,
-                )
-
-                explained = latent_reference["explained_variance"]
-                st.caption(
-                    f"Capa `{latent_reference['layer_name']}`: "
-                    f"{latent_reference['latent_dimensions']} dimensiones → 2D "
-                    f"mediante PCA. Las dos componentes muestran "
-                    f"{explained.sum():.1%} de la variación total."
-                )
-
-                with st.expander("¿Cómo interpretar este mapa?"):
-                    st.write(
-                        "La red convierte cada imagen en una lista de 512 "
-                        "activaciones. Imágenes que producen activaciones "
-                        "parecidas aparecen cerca entre sí. PCA comprime esas "
-                        "512 coordenadas a dos para poder dibujarlas; por eso "
-                        "el mapa es una aproximación y puede contener regiones "
-                        "superpuestas."
+                with result_left:
+                    st.subheader("Predicción")
+                    st.markdown(
+                        f"<div style='font-size:5rem; line-height:1; "
+                        f"font-weight:700; text-align:center; color:#e63946;'>"
+                        f"{prediction}</div>",
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        f"<p style='text-align:center'>Confianza: "
+                        f"<strong>{confidence:.1%}</strong></p>",
+                        unsafe_allow_html=True,
                     )
 
-            except Exception as latent_exc:
-                st.warning(
-                    "No fue posible construir el mapa latente. La clasificación "
-                    "continúa funcionando normalmente."
+                with result_right:
+                    st.subheader("Opciones")
+                    for digit in top_three:
+                        probability = float(probabilities[digit])
+                        st.write(f"**{digit}** — {probability:.1%}")
+                        st.progress(probability)
+
+                with st.expander("Ver la imagen que recibe el modelo"):
+                    st.image(
+                        normalized,
+                        caption="Imagen normalizada a 28 × 28",
+                        clamp=True,
+                        width=224,
+                    )
+
+                if confidence < 0.60:
+                    st.info(
+                        "La confianza es baja. Prueba dibujando el dígito más "
+                        "grande y con un solo trazo continuo."
+                    )
+
+            with map_column:
+                st.subheader("Espacio de representación")
+                st.caption(
+                    "Cada punto representa una imagen de MNIST. El diamante negro "
+                    "indica dónde ubica la red el dígito que acabas de dibujar."
                 )
-                with st.expander("Detalle del problema"):
-                    st.code(str(latent_exc))
+
+                try:
+                    latent_reference = build_latent_reference(
+                        model,
+                        str(MODEL_PATH),
+                        MODEL_PATH.stat().st_mtime_ns,
+                    )
+                    latent_vector = latent_reference["extractor"].predict(
+                        model_input,
+                        verbose=0,
+                    )
+                    latent_vector = np.asarray(
+                        latent_vector,
+                        dtype=np.float32,
+                    ).reshape(1, -1)
+                    latent_point = (
+                        latent_vector - latent_reference["mean"]
+                    ) @ latent_reference["components"].T
+
+                    render_latent_map(
+                        latent_reference,
+                        latent_point[0],
+                        prediction,
+                    )
+
+                    explained = latent_reference["explained_variance"]
+                    st.caption(
+                        f"Capa `{latent_reference['layer_name']}`: "
+                        f"{latent_reference['latent_dimensions']} dimensiones → "
+                        f"2D mediante PCA. Las dos componentes muestran "
+                        f"{explained.sum():.1%} de la variación total."
+                    )
+
+                    with st.expander("¿Cómo interpretar este mapa?"):
+                        st.write(
+                            "La red convierte cada imagen en una lista de 512 "
+                            "activaciones. Imágenes que producen activaciones "
+                            "parecidas aparecen cerca entre sí. PCA comprime esas "
+                            "512 coordenadas a dos para poder dibujarlas; por eso "
+                            "el mapa es una aproximación y puede contener regiones "
+                            "superpuestas."
+                        )
+
+                except Exception as latent_exc:
+                    st.warning(
+                        "No fue posible construir el mapa. La clasificación "
+                        "continúa funcionando normalmente."
+                    )
+                    with st.expander("Detalle del problema"):
+                        st.code(str(latent_exc))
         else:
-            st.caption("La predicción aparecerá automáticamente al dibujar.")
+            with draw_column:
+                st.caption("La predicción aparecerá automáticamente al dibujar.")
+            with map_column:
+                st.subheader("Espacio de representación")
+                st.info("Dibuja un número para mostrar su posición en el mapa.")
 
     except Exception as exc:
-        st.error(f"Error al procesar la predicción: {exc}")
+        with draw_column:
+            st.error(f"Error al procesar la predicción: {exc}")
+else:
+    with draw_column:
+        st.caption("La predicción aparecerá automáticamente al dibujar.")
+    with map_column:
+        st.subheader("Espacio de representación")
+        st.info("Dibuja un número para mostrar su posición en el mapa.")
 
 
 with st.expander("Información técnica"):
