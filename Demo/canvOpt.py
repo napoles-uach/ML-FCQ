@@ -1,6 +1,8 @@
 from pathlib import Path
 
+import altair as alt
 import numpy as np
+import pandas as pd
 import streamlit as st
 import tensorflow as tf
 from scipy.ndimage import center_of_mass, shift, zoom
@@ -188,6 +190,171 @@ def as_probabilities(output: np.ndarray) -> np.ndarray:
 
 
 # -----------------------------------------------------------------------------
+# Espacio latente
+# -----------------------------------------------------------------------------
+
+def adapt_mnist_batch(images: np.ndarray, input_shape) -> np.ndarray:
+    """Adapta un lote (N, 28, 28) a la entrada declarada por el modelo."""
+    images = images.astype(np.float32)
+
+    if isinstance(input_shape, list):
+        raise ValueError("El espacio latente requiere un modelo de una entrada.")
+
+    if len(input_shape) == 4:
+        if input_shape[-1] in (1, None):
+            batch = images[..., None]
+        elif input_shape[1] in (1, None):
+            batch = images[:, None, ...]
+        else:
+            raise ValueError(f"Entrada de imagen no reconocida: {input_shape}")
+    elif len(input_shape) == 3:
+        batch = images
+    elif len(input_shape) == 2:
+        batch = images.reshape(len(images), -1)
+    else:
+        raise ValueError(f"Forma de entrada no reconocida: {input_shape}")
+
+    return batch.astype(np.float32)
+
+
+@st.cache_resource(show_spinner="Construyendo el mapa del espacio latente...")
+def build_latent_reference(
+    _model,
+    model_path: str,
+    model_mtime_ns: int,
+    samples_per_digit: int = 200,
+):
+    """Calcula y conserva una proyección PCA de la capa oculta del modelo."""
+    # path y mtime forman parte de la llave del caché y fuerzan la
+    # reconstrucción si cambia el archivo del modelo.
+    _ = (model_path, model_mtime_ns)
+
+    if len(_model.layers) < 2:
+        raise ValueError("El modelo no contiene una capa oculta utilizable.")
+
+    latent_layer = _model.layers[-2]
+    latent_model = tf.keras.Model(
+        inputs=_model.inputs,
+        outputs=latent_layer.output,
+        name="extractor_latente",
+    )
+
+    (_, _), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
+
+    selected = np.concatenate(
+        [np.flatnonzero(y_test == digit)[:samples_per_digit] for digit in range(10)]
+    )
+    images = x_test[selected].astype(np.float32) / 255.0
+    labels = y_test[selected].astype(np.int8)
+    reference_input = adapt_mnist_batch(images, _model.input_shape)
+
+    embeddings = latent_model.predict(
+        reference_input,
+        batch_size=256,
+        verbose=0,
+    )
+    embeddings = np.asarray(embeddings, dtype=np.float32).reshape(len(selected), -1)
+
+    latent_mean = embeddings.mean(axis=0, keepdims=True)
+    centered = embeddings - latent_mean
+    _, singular_values, components = np.linalg.svd(
+        centered,
+        full_matrices=False,
+    )
+    components = components[:2].astype(np.float32)
+    coordinates = centered @ components.T
+
+    total_variance = float(np.sum(singular_values**2))
+    explained_variance = (
+        singular_values[:2] ** 2 / total_variance
+        if total_variance > 0
+        else np.zeros(2)
+    )
+
+    return {
+        "extractor": latent_model,
+        "layer_name": latent_layer.name,
+        "latent_dimensions": int(embeddings.shape[1]),
+        "mean": latent_mean.astype(np.float32),
+        "components": components,
+        "coordinates": coordinates.astype(np.float32),
+        "labels": labels,
+        "explained_variance": np.asarray(explained_variance, dtype=np.float32),
+    }
+
+
+def render_latent_map(reference: dict, point: np.ndarray, prediction: int):
+    """Dibuja las referencias MNIST y resalta la posición del usuario."""
+    coordinates = reference["coordinates"]
+    labels = reference["labels"]
+
+    reference_frame = pd.DataFrame(
+        {
+            "Componente 1": coordinates[:, 0],
+            "Componente 2": coordinates[:, 1],
+            "Dígito": labels.astype(str),
+        }
+    )
+    point_frame = pd.DataFrame(
+        {
+            "Componente 1": [float(point[0])],
+            "Componente 2": [float(point[1])],
+            "Predicción": [str(prediction)],
+            "Etiqueta": [f"Tu dibujo: {prediction}"],
+        }
+    )
+
+    background = (
+        alt.Chart(reference_frame)
+        .mark_circle(size=34, opacity=0.34)
+        .encode(
+            x=alt.X("Componente 1:Q", title="Primera componente principal"),
+            y=alt.Y("Componente 2:Q", title="Segunda componente principal"),
+            color=alt.Color(
+                "Dígito:N",
+                title="Dígito real",
+                scale=alt.Scale(scheme="tableau10"),
+            ),
+            tooltip=["Dígito:N", "Componente 1:Q", "Componente 2:Q"],
+        )
+    )
+
+    user_point = (
+        alt.Chart(point_frame)
+        .mark_point(
+            shape="diamond",
+            filled=True,
+            size=330,
+            color="#111827",
+            stroke="white",
+            strokeWidth=2,
+        )
+        .encode(
+            x="Componente 1:Q",
+            y="Componente 2:Q",
+            tooltip=["Etiqueta:N", "Componente 1:Q", "Componente 2:Q"],
+        )
+    )
+
+    user_label = (
+        alt.Chart(point_frame)
+        .mark_text(dy=-18, fontSize=14, fontWeight="bold", color="#111827")
+        .encode(
+            x="Componente 1:Q",
+            y="Componente 2:Q",
+            text="Etiqueta:N",
+        )
+    )
+
+    chart = (
+        (background + user_point + user_label)
+        .properties(height=460)
+        .interactive()
+    )
+    st.altair_chart(chart, use_container_width=True)
+
+
+# -----------------------------------------------------------------------------
 # Interfaz
 # -----------------------------------------------------------------------------
 
@@ -283,6 +450,62 @@ if canvas_result.image_data is not None:
                     "La confianza es baja. Prueba dibujando el dígito más grande "
                     "y con un solo trazo continuo."
                 )
+
+            st.divider()
+            st.subheader("Espacio latente")
+            st.caption(
+                "Cada punto representa una imagen de MNIST. El diamante negro "
+                "indica dónde ubica la red el dígito que acabas de dibujar."
+            )
+
+            try:
+                latent_reference = build_latent_reference(
+                    model,
+                    str(MODEL_PATH),
+                    MODEL_PATH.stat().st_mtime_ns,
+                )
+                latent_vector = latent_reference["extractor"].predict(
+                    model_input,
+                    verbose=0,
+                )
+                latent_vector = np.asarray(latent_vector, dtype=np.float32).reshape(
+                    1, -1
+                )
+                latent_point = (
+                    latent_vector - latent_reference["mean"]
+                ) @ latent_reference["components"].T
+
+                render_latent_map(
+                    latent_reference,
+                    latent_point[0],
+                    prediction,
+                )
+
+                explained = latent_reference["explained_variance"]
+                st.caption(
+                    f"Capa `{latent_reference['layer_name']}`: "
+                    f"{latent_reference['latent_dimensions']} dimensiones → 2D "
+                    f"mediante PCA. Las dos componentes muestran "
+                    f"{explained.sum():.1%} de la variación total."
+                )
+
+                with st.expander("¿Cómo interpretar este mapa?"):
+                    st.write(
+                        "La red convierte cada imagen en una lista de 512 "
+                        "activaciones. Imágenes que producen activaciones "
+                        "parecidas aparecen cerca entre sí. PCA comprime esas "
+                        "512 coordenadas a dos para poder dibujarlas; por eso "
+                        "el mapa es una aproximación y puede contener regiones "
+                        "superpuestas."
+                    )
+
+            except Exception as latent_exc:
+                st.warning(
+                    "No fue posible construir el mapa latente. La clasificación "
+                    "continúa funcionando normalmente."
+                )
+                with st.expander("Detalle del problema"):
+                    st.code(str(latent_exc))
         else:
             st.caption("La predicción aparecerá automáticamente al dibujar.")
 
