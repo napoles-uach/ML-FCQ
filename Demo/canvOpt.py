@@ -194,26 +194,32 @@ def as_probabilities(output: np.ndarray) -> np.ndarray:
 if "canvas_version" not in st.session_state:
     st.session_state.canvas_version = 0
 
-canvas_result = st_canvas(
-    stroke_width=12,
-    stroke_color="#000000",
-    background_color="#FFFFFF",
-    height=280,
-    width=280,
-    drawing_mode="freedraw",
-    display_toolbar=False,
-    update_streamlit=True,
-    key=f"digit_canvas_{st.session_state.canvas_version}",
-)
 
-clear_clicked = st.button(
+def clear_canvas():
+    """Cambia la identidad del canvas antes del siguiente renderizado."""
+    st.session_state.canvas_version += 1
+
+
+# Mantener una altura fija evita que la página se contraiga mientras el
+# componente se reinicia al limpiar.
+with st.container(height=300, border=False):
+    canvas_result = st_canvas(
+        stroke_width=12,
+        stroke_color="#000000",
+        background_color="#FFFFFF",
+        height=280,
+        width=280,
+        drawing_mode="freedraw",
+        display_toolbar=False,
+        update_streamlit=True,
+        key=f"digit_canvas_{st.session_state.canvas_version}",
+    )
+
+st.button(
     "Limpiar",
     use_container_width=True,
+    on_click=clear_canvas,
 )
-
-if clear_clicked:
-    st.session_state.canvas_version += 1
-    st.rerun()
 
 if canvas_result.image_data is not None:
     try:
