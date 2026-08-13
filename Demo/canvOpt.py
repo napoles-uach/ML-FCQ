@@ -22,7 +22,25 @@ st.caption("Dibuja un número del 0 al 9 y el modelo intentará reconocerlo.")
 # -----------------------------------------------------------------------------
 
 BASE_DIR = Path(__file__).resolve().parent
-MODEL_PATH = BASE_DIR / "mi_modelo.h5"
+
+
+def find_model_path() -> Path | None:
+    """Busca el modelo en ubicaciones habituales del proyecto."""
+    candidates = (
+        BASE_DIR / "mi_modelo.h5",
+        BASE_DIR / "Demo" / "mi_modelo.h5",
+        Path.cwd() / "mi_modelo.h5",
+        Path.cwd() / "Demo" / "mi_modelo.h5",
+    )
+
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate.resolve()
+
+    return None
+
+
+MODEL_PATH = find_model_path()
 
 
 @st.cache_resource(show_spinner="Cargando modelo...")
@@ -30,9 +48,12 @@ def load_model(path: Path):
     return tf.keras.models.load_model(path, compile=False)
 
 
-if not MODEL_PATH.is_file():
-    st.error(f"No se encontró el modelo en: {MODEL_PATH}")
-    st.info("Coloca mi_modelo.h5 dentro de la carpeta Demo.")
+if MODEL_PATH is None:
+    st.error("No se encontró el archivo mi_modelo.h5.")
+    st.info(
+        "Colócalo junto al archivo de la aplicación o dentro de una "
+        "subcarpeta llamada Demo."
+    )
     st.stop()
 
 try:
@@ -185,13 +206,7 @@ canvas_result = st_canvas(
     key=f"digit_canvas_{st.session_state.canvas_version}",
 )
 
-button_left, button_right = st.columns(2)
-predict_clicked = button_left.button(
-    "Reconocer dígito",
-    type="primary",
-    use_container_width=True,
-)
-clear_clicked = button_right.button(
+clear_clicked = st.button(
     "Limpiar",
     use_container_width=True,
 )
@@ -200,16 +215,11 @@ if clear_clicked:
     st.session_state.canvas_version += 1
     st.rerun()
 
-if predict_clicked:
-    if canvas_result.image_data is None:
-        st.warning("Primero dibuja un número.")
-    else:
-        try:
-            ink = rgba_to_ink(canvas_result.image_data)
-            if not has_drawing(ink):
-                st.warning("Primero dibuja un número.")
-                st.stop()
+if canvas_result.image_data is not None:
+    try:
+        ink = rgba_to_ink(canvas_result.image_data)
 
+        if has_drawing(ink):
             normalized = mnist_normalize(ink)
             model_input = adapt_to_model(normalized)
             raw_output = model.predict(model_input, verbose=0)
@@ -260,9 +270,11 @@ if predict_clicked:
                     "La confianza es baja. Prueba dibujando el dígito más grande "
                     "y con un solo trazo continuo."
                 )
+        else:
+            st.caption("La predicción aparecerá automáticamente al dibujar.")
 
-        except Exception as exc:
-            st.error(f"Error al procesar la predicción: {exc}")
+    except Exception as exc:
+        st.error(f"Error al procesar la predicción: {exc}")
 
 
 with st.expander("Información técnica"):
