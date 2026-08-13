@@ -22,7 +22,7 @@ st.caption("Dibuja un número del 0 al 9 y el modelo intentará reconocerlo.")
 # -----------------------------------------------------------------------------
 
 BASE_DIR = Path(__file__).resolve().parent
-MODEL_PATH = BASE_DIR / "Demo" / "mi_modelo.h5"
+MODEL_PATH = BASE_DIR / "mi_modelo.h5"
 
 
 @st.cache_resource(show_spinner="Cargando modelo...")
